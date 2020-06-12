@@ -8,7 +8,6 @@ import java.time.Year;
 import java.util.OptionalInt;
 import java.util.Set;
 
-import com.jw.cronparser.CronObject;
 import com.jw.cronparser.domain.*;
 
 public class ForwardSearcher implements CronSearcher {
@@ -129,38 +128,14 @@ public class ForwardSearcher implements CronSearcher {
 
     private boolean forwardCheckCurrentYear(LocalDateTime dateTime) {
         Set<CronYears> cronYears = cronObject.getYears();
-        if (cronYears.contains(CronYears.EVERY)) {
-            return true;
-        }
-        for (CronYears cronYear : cronYears) {
-            if (cronYear.getStart().equals(dateTime.getYear())
-                    || (cronYear.hasEnd() && dateTime.getYear() >= cronYear.getStart() && cronYear.getEnd() >= dateTime.getYear())) {
-                return true;
-            } else if (cronYear.hasEvery() && cronYear.getStart() < dateTime.getYear()
-                    && (!cronYear.hasEnd() || cronYear.getEnd() >= dateTime.getYear())
-                    && (dateTime.getYear() - cronYear.getStart()) % cronYear.getEvery() == 0) {
-                return true;
-            }
-        }
-        return false;
+        return cronYears.contains(CronYears.EVERY)
+                || cronYears.stream().anyMatch(cronYear -> checkCurrent(cronYear, dateTime.getYear()));
     }
 
     private boolean forwardCheckCurrentMonth(LocalDateTime dateTime) {
         Set<CronMonths> cronMonths = cronObject.getMonths();
-        if (cronMonths.contains(CronMonths.EVERY)) {
-            return true;
-        }
-        for (CronMonths cronMonth : cronMonths) {
-            if (cronMonth.getStart().equals(dateTime.getMonthValue())
-                    || (cronMonth.hasEnd() && dateTime.getMonthValue() >= cronMonth.getStart() && cronMonth.getEnd() >= dateTime.getMonthValue())) {
-                return true;
-            } else if (cronMonth.hasEvery() && cronMonth.getStart() < dateTime.getMonthValue()
-                    && (!cronMonth.hasEnd() || cronMonth.getEnd() >= dateTime.getMonthValue())
-                    && (dateTime.getMonthValue() - cronMonth.getStart()) % cronMonth.getEvery() == 0) {
-                return true;
-            }
-        }
-        return false;
+        return cronMonths.contains(CronMonths.EVERY)
+                || cronMonths.stream().anyMatch(cronMonth -> checkCurrent(cronMonth, dateTime.getMonthValue()));
     }
 
     private boolean forwardCheckCurrentDayOfMonth(LocalDateTime dateTime) {
@@ -174,8 +149,8 @@ public class ForwardSearcher implements CronSearcher {
                     || (cronDay.getStart() <= 0 && dateTime.getDayOfMonth() == dateTime.getMonth().length(Year.isLeap(dateTime.getYear())) - cronDay.getStart())
                     || (cronDay.isClosestWeekday() && closestWeekDay(dateTime.withDayOfMonth(cronDay.getStart())) == dateTime.getDayOfMonth())
                     || (cronDay.hasEvery() && cronDay.getStart() < dateTime.getDayOfMonth()
-                        && (!cronDay.hasEnd() || cronDay.getEnd() >= dateTime.getDayOfMonth())
-                        && (dateTime.getDayOfMonth() - cronDay.getStart()) % cronDay.getEvery() == 0)) {
+                    && (!cronDay.hasEnd() || cronDay.getEnd() >= dateTime.getDayOfMonth())
+                    && (dateTime.getDayOfMonth() - cronDay.getStart()) % cronDay.getEvery() == 0)) {
                 return true;
             }
         }
@@ -203,56 +178,20 @@ public class ForwardSearcher implements CronSearcher {
 
     private boolean forwardCheckCurrentHour(LocalDateTime dateTime) {
         Set<CronHours> cronHours = cronObject.getHours();
-        if (cronHours.contains(CronHours.EVERY)) {
-            return true;
-        }
-        for (CronHours cronHour : cronHours) {
-            if (cronHour.getStart().equals(dateTime.getHour())
-                    || (cronHour.hasEnd() && dateTime.getHour() >= cronHour.getStart() && cronHour.getEnd() >= dateTime.getHour())) {
-                return true;
-            } else if (cronHour.hasEvery() && cronHour.getStart() < dateTime.getHour()
-                    && (!cronHour.hasEnd() || cronHour.getEnd() >= dateTime.getHour())
-                    && (dateTime.getHour() - cronHour.getStart()) % cronHour.getEvery() == 0) {
-                return true;
-            }
-        }
-        return false;
+        return cronHours.contains(CronHours.EVERY)
+                || cronHours.stream().anyMatch(cronHour -> checkCurrent(cronHour, dateTime.getHour()));
     }
 
     private boolean forwardCheckCurrentMinute(LocalDateTime dateTime) {
         Set<CronMinutes> cronMinutes = cronObject.getMinutes();
-        if (cronMinutes.contains(CronMinutes.EVERY)) {
-            return true;
-        }
-        for (CronMinutes cronMinute : cronMinutes) {
-            if (cronMinute.getStart().equals(dateTime.getMinute())
-                    || (cronMinute.hasEnd() && dateTime.getMinute() >= cronMinute.getStart() && cronMinute.getEnd() >= dateTime.getMinute())) {
-                return true;
-            } else if (cronMinute.hasEvery() && cronMinute.getStart() < dateTime.getMinute()
-                    && (!cronMinute.hasEnd() || cronMinute.getEnd() >= dateTime.getMinute())
-                    && (dateTime.getMinute() - cronMinute.getStart()) % cronMinute.getEvery() == 0) {
-                return true;
-            }
-        }
-        return false;
+        return cronMinutes.contains(CronMinutes.EVERY)
+                || cronMinutes.stream().anyMatch(cronMinute -> checkCurrent(cronMinute, dateTime.getMinute()));
     }
 
     private boolean forwardCheckCurrentSecond(LocalDateTime dateTime) {
         Set<CronSeconds> cronSeconds = cronObject.getSeconds();
-        if (cronSeconds.contains(CronSeconds.EVERY)) {
-            return true;
-        }
-        for (CronSeconds cronSecond : cronSeconds) {
-            if (cronSecond.getStart().equals(dateTime.getSecond())
-                    || (cronSecond.hasEnd() && dateTime.getSecond() >= cronSecond.getStart() && cronSecond.getEnd() >= dateTime.getSecond())) {
-                return true;
-            } else if (cronSecond.hasEvery() && cronSecond.getStart() < dateTime.getSecond()
-                    && (!cronSecond.hasEnd() || cronSecond.getEnd() >= dateTime.getSecond())
-                    && (dateTime.getSecond() - cronSecond.getStart()) % cronSecond.getEvery() == 0) {
-                return true;
-            }
-        }
-        return false;
+        return cronSeconds.contains(CronSeconds.EVERY)
+                || cronSeconds.stream().anyMatch(cronSecond -> checkCurrent(cronSecond, dateTime.getSecond()));
     }
 
 
@@ -410,6 +349,22 @@ public class ForwardSearcher implements CronSearcher {
             }
         }
         return closest;
+    }
+
+    private boolean checkCurrent(CronToken cronToken, int current) {
+        if (!cronToken.hasEnd() && !cronToken.hasEvery()) {
+            return cronToken.getStart() == current;
+        } else if (cronToken.getStart() <= current) {
+            if (cronToken.hasEnd()) {
+                if (cronToken.hasEvery() && cronToken.getEnd() >= current) {
+                    return (current - cronToken.getStart()) % cronToken.getEvery() == 0;
+                }
+                return cronToken.getStart() <= current && current <= cronToken.getEnd();
+            } else if (cronToken.hasEvery() && !cronToken.hasEnd()) {
+                return (current - cronToken.getStart()) % cronToken.getEvery() == 0;
+            }
+        }
+        return false;
     }
 
     private int findForDayOfWeek(CronDaysOfWeek cronDay, int lastDay, int currentDay, DayOfWeek dayOfWeek) {

@@ -10,7 +10,6 @@ import java.util.Collection;
 import java.util.OptionalInt;
 import java.util.Set;
 
-import com.jw.cronparser.CronObject;
 import com.jw.cronparser.domain.*;
 
 public class BackwardSearcher implements CronSearcher {
@@ -40,7 +39,7 @@ public class BackwardSearcher implements CronSearcher {
             if (nextValidYear == null) {
                 return null;
             }
-            current = LocalDateTime.of(nextValidYear, 12, 31, 23, 59, 59);
+            current = LocalDateTime.of(nextValidYear, MAX_MONTH, MAX_DAY_OF_MONTH, MAX_HOUR, MAX_MINUTE, MAX_SECOND);
             result = backwardChainMonth(current);
         }
         return result;
@@ -58,7 +57,7 @@ public class BackwardSearcher implements CronSearcher {
                 return null;
             }
             Month month = Month.of(nextValidMonth);
-            current = LocalDateTime.of(current.getYear(), month, month.length(Year.isLeap(current.getYear())), 23, 59, 59);
+            current = LocalDateTime.of(current.getYear(), month, month.length(Year.isLeap(current.getYear())), MAX_HOUR, MAX_MINUTE, MAX_SECOND);
             result = backwardChainDay(current);
         }
         return result;
@@ -75,7 +74,7 @@ public class BackwardSearcher implements CronSearcher {
             if (nextValidDay == null) {
                 return null;
             }
-            current = LocalDateTime.of(current.getYear(), current.getMonthValue(), nextValidDay, 23, 59, 59);
+            current = LocalDateTime.of(current.getYear(), current.getMonthValue(), nextValidDay, MAX_HOUR, MAX_MINUTE, MAX_SECOND);
             result = backwardChainHour(current);
         }
         return result;
@@ -92,7 +91,7 @@ public class BackwardSearcher implements CronSearcher {
             if (nextValidHour == null) {
                 return null;
             }
-            current = LocalDateTime.of(current.getYear(), current.getMonthValue(), current.getDayOfMonth(), nextValidHour, 59, 59);
+            current = LocalDateTime.of(current.getYear(), current.getMonthValue(), current.getDayOfMonth(), nextValidHour, MAX_MINUTE, MAX_SECOND);
             result = backwardChainMinute(current);
         }
         return result;
@@ -110,7 +109,7 @@ public class BackwardSearcher implements CronSearcher {
                 return null;
             }
             current = LocalDateTime.of(current.getYear(), current.getMonthValue(), current.getDayOfMonth(),
-                    current.getHour(), nextValidMinute, 59);
+                    current.getHour(), nextValidMinute, MAX_SECOND);
             result = backwardChainSecond(current);
         }
         return result;
@@ -348,9 +347,9 @@ public class BackwardSearcher implements CronSearcher {
 
     private int findForOrdinalDayOfWeek(CronDaysOfWeek cronDay, int lastDay, int dayOfWeekOfFirst) {
         OptionalInt maybeMinDiff = cronDay.getMatchingDaysOfWeek().stream().mapToInt(d -> dayOfWeekDiff(dayOfWeekOfFirst, d)).min();
-        int minDiff = maybeMinDiff.isPresent() ? maybeMinDiff.getAsInt() : 32;
-        int result = minDiff + 7 * (cronDay.getOrdinal() - 1) + 1;
-        return result <= lastDay ? result : 32;
+        int minDiff = maybeMinDiff.isPresent() ? maybeMinDiff.getAsInt() : Integer.MIN_VALUE;
+        int result = minDiff + WEEK_LENGTH * (cronDay.getOrdinal() - 1) + 1;
+        return result <= lastDay ? result : Integer.MIN_VALUE;
     }
 
     private boolean checkCurrent(CronToken cronToken, int current) {

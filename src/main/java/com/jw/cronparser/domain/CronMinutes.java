@@ -1,5 +1,7 @@
 package com.jw.cronparser.domain;
 
+import static com.jw.cronparser.CronUtils.MAX_MINUTE;
+
 import java.util.Arrays;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -15,10 +17,23 @@ public class CronMinutes implements CronToken {
     private static final Pattern REGEX_RANGE = Pattern.compile("^(\\d+)-(\\d+)$");
     private static final Pattern REGEX_EVERY = Pattern.compile("^(\\d+)/(\\d+)$");
     private static final Pattern REGEX_SIMPLE = Pattern.compile("^(\\d+)$");
+    private static final int GROUP_1 = 1;
+    private static final int GROUP_2 = 2;
+    private static final int GROUP_3 = 3;
 
-    private Integer start;
-    private Integer every;
-    private Integer end;
+    private final Integer start;
+    private final Integer every;
+    private final Integer end;
+
+    CronMinutes(Integer start, Integer every, Integer end) {
+        assert start != null;
+        assert start >= 0 && start <= MAX_MINUTE;
+        assert end == null || end >= 0 && end <= MAX_MINUTE && end >= start;
+        assert every == null || every > 0;
+        this.start = start;
+        this.end = end;
+        this.every = every;
+    }
 
     public static Set<CronMinutes> parse(String str) {
         if (str.equals(CRON_EVERY)) {
@@ -27,8 +42,7 @@ public class CronMinutes implements CronToken {
         String[] expressions = str.split(",");
         if (expressions.length > 0) {
             return Arrays.stream(expressions).map(CronMinutes::parseElement).collect(Collectors.toSet());
-        }
-        else {
+        } else {
             throw new IllegalArgumentException("Wrong Cron format for minutes: " + str);
         }
     }
@@ -39,29 +53,16 @@ public class CronMinutes implements CronToken {
         Matcher matcherRange = REGEX_RANGE.matcher(expression);
         Matcher matcherSimple = REGEX_SIMPLE.matcher(expression);
         if (matcherAll.matches()) {
-            return new CronMinutes(Integer.parseInt(matcherAll.group(1)), Integer.parseInt(matcherAll.group(3)), Integer.parseInt(matcherAll.group(2)));
+            return new CronMinutes(Integer.parseInt(matcherAll.group(GROUP_1)),
+                    Integer.parseInt(matcherAll.group(GROUP_3)), Integer.parseInt(matcherAll.group(GROUP_2)));
         } else if (matcherEvery.matches()) {
-            return new CronMinutes(Integer.parseInt(matcherEvery.group(1)), Integer.parseInt(matcherEvery.group(2)), null);
+            return new CronMinutes(Integer.parseInt(matcherEvery.group(GROUP_1)), Integer.parseInt(matcherEvery.group(GROUP_2)), null);
         } else if (matcherRange.matches()) {
-            return new CronMinutes(Integer.parseInt(matcherRange.group(1)), null, Integer.parseInt(matcherRange.group(2)));
+            return new CronMinutes(Integer.parseInt(matcherRange.group(GROUP_1)), null, Integer.parseInt(matcherRange.group(GROUP_2)));
         } else if (matcherSimple.matches()) {
-            return new CronMinutes(Integer.parseInt(matcherSimple.group(1)), null, null);
+            return new CronMinutes(Integer.parseInt(matcherSimple.group(GROUP_1)), null, null);
         } else {
             throw new IllegalArgumentException("Wrong Cron format for minutes: " + expression);
-        }
-    }
-
-    public CronMinutes(Integer start, Integer every, Integer end) {
-        assert start != null;
-        assert start >= 0 && start < 60;
-        this.start = start;
-        if (end != null) {
-            assert end >= 0 && end < 60 && end >= start;
-            this.end = end;
-        }
-        if (every != null) {
-            assert every > 0;
-            this.every = every;
         }
     }
 
@@ -87,17 +88,25 @@ public class CronMinutes implements CronToken {
 
     @Override
     public int hashCode() {
-        int result = start ^ (start >>> 32);
-        result = 31 * result + (every == null ? 0 : every.hashCode());
-        result = 31 * result + (end == null ? 0 : end.hashCode());
+        final int constant = 32;
+        final int prime = 31;
+        int result = start ^ (start >>> constant);
+        result = prime * result + (every == null ? 0 : every.hashCode());
+        result = prime * result + (end == null ? 0 : end.hashCode());
         return result;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        if (this.getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null) {
+            return false;
+        }
+        if (this.getClass() != o.getClass()) {
+            return false;
+        }
         CronMinutes cronMinutes = (CronMinutes) o;
         return start.equals(cronMinutes.start)
                 && every.equals(cronMinutes.every)

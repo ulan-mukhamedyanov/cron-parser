@@ -1,11 +1,13 @@
-package com.jw.cronparser;
+package com.jw.cronparser.domain;
 
 import java.time.LocalDateTime;
 import java.util.Set;
 
 import com.jw.cronparser.searcher.*;
-import com.jw.cronparser.domain.*;
 
+import lombok.Builder;
+
+@Builder
 public class CronObject {
 
     private final Set<CronSeconds> seconds;
@@ -15,22 +17,6 @@ public class CronObject {
     private final Set<CronMonths> months;
     private final Set<CronDaysOfWeek> daysOfWeek;
     private final Set<CronYears> years;
-
-    public CronObject(Set<CronSeconds> seconds, Set<CronMinutes> minutes, Set<CronHours> hours,
-            Set<CronDaysOfMonth> daysOfMonth, Set<CronMonths> months, Set<CronDaysOfWeek> daysOfWeek, Set<CronYears> years) {
-        this.seconds = seconds;
-        this.minutes = minutes;
-        this.hours = hours;
-        this.daysOfMonth = daysOfMonth;
-        this.months = months;
-        this.daysOfWeek = daysOfWeek;
-        this.years = years;
-        if (!(daysOfMonth.contains(CronDaysOfMonth.ANY) || daysOfWeek.contains(CronDaysOfWeek.ANY))) {
-            throw new UnsupportedOperationException("Calculating with both day of month and day of week is not supported");
-        } else if (daysOfMonth.contains(CronDaysOfMonth.ANY) && daysOfWeek.contains(CronDaysOfWeek.ANY)) {
-            throw new IllegalArgumentException("Either day of month or day of week must be specified");
-        }
-    }
 
     public Set<CronSeconds> getSeconds() {
         return seconds;

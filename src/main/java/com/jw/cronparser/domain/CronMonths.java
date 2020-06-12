@@ -1,5 +1,8 @@
 package com.jw.cronparser.domain;
 
+import static com.jw.cronparser.CronUtils.MAX_MONTH;
+
+import java.time.Month;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
@@ -15,29 +18,41 @@ public class CronMonths implements CronToken {
     private static final String CRON_EVERY = "*";
     private static final Pattern REGEX_ALL =
             Pattern.compile("^(\\d+|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:-(\\d+|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:/(\\d+))?$");
-
     private static final Map<String, Integer> MONTH_MAPPING;
+    private static final int GROUP_1 = 1;
+    private static final int GROUP_2 = 2;
+    private static final int GROUP_3 = 3;
 
     static {
         Map<String, Integer> monthMapping = new HashMap<>();
-        monthMapping.put("JAN", 1);
-        monthMapping.put("FEB", 2);
-        monthMapping.put("MAR", 3);
-        monthMapping.put("APR", 4);
-        monthMapping.put("MAY", 5);
-        monthMapping.put("JUN", 6);
-        monthMapping.put("JUL", 7);
-        monthMapping.put("AUG", 8);
-        monthMapping.put("SEP", 9);
-        monthMapping.put("OCT", 10);
-        monthMapping.put("NOV", 11);
-        monthMapping.put("DEC", 12);
+        monthMapping.put("JAN", Month.JANUARY.getValue());
+        monthMapping.put("FEB", Month.FEBRUARY.getValue());
+        monthMapping.put("MAR", Month.MARCH.getValue());
+        monthMapping.put("APR", Month.APRIL.getValue());
+        monthMapping.put("MAY", Month.MAY.getValue());
+        monthMapping.put("JUN", Month.JUNE.getValue());
+        monthMapping.put("JUL", Month.JULY.getValue());
+        monthMapping.put("AUG", Month.AUGUST.getValue());
+        monthMapping.put("SEP", Month.SEPTEMBER.getValue());
+        monthMapping.put("OCT", Month.OCTOBER.getValue());
+        monthMapping.put("NOV", Month.NOVEMBER.getValue());
+        monthMapping.put("DEC", Month.DECEMBER.getValue());
         MONTH_MAPPING = monthMapping;
     }
 
-    private Integer start;
-    private Integer every;
-    private Integer end;
+    private final Integer start;
+    private final Integer every;
+    private final Integer end;
+
+    CronMonths(Integer start, Integer every, Integer end) {
+        assert start != null;
+        assert start >= 1 && start <= MAX_MONTH;
+        assert end == null || end >= 1 && end <= MAX_MONTH && end >= start;
+        assert every == null || every > 0;
+        this.start = start;
+        this.end = end;
+        this.every = every;
+    }
 
     public static Set<CronMonths> parse(String str) {
         if (str.equals(CRON_EVERY)) {
@@ -54,23 +69,9 @@ public class CronMonths implements CronToken {
     private static CronMonths parseElement(String expression) {
         Matcher matcherAll = REGEX_ALL.matcher(expression);
         if (matcherAll.matches()) {
-            return new CronMonths(resolveMonth(matcherAll.group(1)), resolveMonth(matcherAll.group(3)), resolveMonth(matcherAll.group(2)));
+            return new CronMonths(resolveMonth(matcherAll.group(GROUP_1)), resolveMonth(matcherAll.group(GROUP_3)), resolveMonth(matcherAll.group(GROUP_2)));
         } else {
             throw new IllegalArgumentException("Wrong Cron format for months: " + expression);
-        }
-    }
-
-    public CronMonths(Integer start, Integer every, Integer end) {
-        assert start != null;
-        assert start >= 1 && start <= 12;
-        this.start = start;
-        if (end != null) {
-            assert end >= 1 && end <= 12 && end >= start;
-            this.end = end;
-        }
-        if (every != null) {
-            assert every > 0;
-            this.every = every;
         }
     }
 
@@ -106,17 +107,25 @@ public class CronMonths implements CronToken {
 
     @Override
     public int hashCode() {
-        int result = start ^ (start >>> 32);
-        result = 31 * result + (every == null ? 0 : every.hashCode());
-        result = 31 * result + (end == null ? 0 : end.hashCode());
+        final int constant = 32;
+        final int prime = 31;
+        int result = start ^ (start >>> constant);
+        result = prime * result + (every == null ? 0 : every.hashCode());
+        result = prime * result + (end == null ? 0 : end.hashCode());
         return result;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        if (this.getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null) {
+            return false;
+        }
+        if (this.getClass() != o.getClass()) {
+            return false;
+        }
         CronMonths cronHours = (CronMonths) o;
         return start.equals(cronHours.start)
                 && every.equals(cronHours.every)

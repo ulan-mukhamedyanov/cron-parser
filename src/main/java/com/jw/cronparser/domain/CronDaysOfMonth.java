@@ -1,5 +1,7 @@
 package com.jw.cronparser.domain;
 
+import static com.jw.cronparser.CronUtils.MAX_DAY_OF_MONTH;
+
 import java.util.Arrays;
 import java.util.Set;
 import java.util.Objects;
@@ -22,12 +24,39 @@ public class CronDaysOfMonth implements CronToken {
     private static final Pattern REGEX_LAST = Pattern.compile("^L(-\\d+)?$");
     private static final Pattern REGEX_WEEKDAY = Pattern.compile("^(\\d+)W$");
     private static final Pattern REGEX_SIMPLE = Pattern.compile("^(\\d+)$");
+    private static final int GROUP_1 = 1;
+    private static final int GROUP_2 = 2;
+    private static final int GROUP_3 = 3;
 
     private final boolean any;
-    private Integer start;
-    private Integer every;
-    private Integer end;
+    private final int start;
+    private final Integer every;
+    private final Integer end;
     private boolean closestWeekday;
+
+    private CronDaysOfMonth(boolean any) {
+        this.any = any;
+        this.start = 0;
+        this.every = null;
+        this.end = null;
+    }
+
+    CronDaysOfMonth(Integer start, Integer every, Integer end) {
+        assert start != null;
+        assert start > -MAX_DAY_OF_MONTH && start <= MAX_DAY_OF_MONTH;
+        assert end == null || end > -MAX_DAY_OF_MONTH && end <= MAX_DAY_OF_MONTH && end >= start;
+        assert every == null || every > 0;
+        this.start = start;
+        this.end = end;
+        this.every = every;
+        this.closestWeekday = false;
+        this.any = false;
+    }
+
+    CronDaysOfMonth(Integer start, Integer every, Integer end, boolean closestWeekday) {
+        this(start, every, end);
+        this.closestWeekday = closestWeekday;
+    }
 
     public static Set<CronDaysOfMonth> parse(String str) {
         if (str.equals(CRON_ANY)) {
@@ -39,8 +68,7 @@ public class CronDaysOfMonth implements CronToken {
         String[] expressions = str.split(",");
         if (expressions.length > 0) {
             return Arrays.stream(expressions).map(CronDaysOfMonth::parseElementNumeralCases).collect(Collectors.toSet());
-        }
-        else {
+        } else {
             throw new IllegalArgumentException("Wrong Cron format for days of month: " + str);
         }
     }
@@ -51,13 +79,14 @@ public class CronDaysOfMonth implements CronToken {
         Matcher matcherRange = REGEX_RANGE.matcher(expression);
         Matcher matcherSimple = REGEX_SIMPLE.matcher(expression);
         if (matcherAll.matches()) {
-            return new CronDaysOfMonth(Integer.parseInt(matcherAll.group(1)), Integer.parseInt(matcherAll.group(3)), Integer.parseInt(matcherAll.group(2)));
+            return new CronDaysOfMonth(Integer.parseInt(matcherAll.group(GROUP_1)),
+                    Integer.parseInt(matcherAll.group(GROUP_3)), Integer.parseInt(matcherAll.group(GROUP_2)));
         } else if (matcherEvery.matches()) {
-            return new CronDaysOfMonth(Integer.parseInt(matcherEvery.group(1)), Integer.parseInt(matcherEvery.group(2)), null);
+            return new CronDaysOfMonth(Integer.parseInt(matcherEvery.group(GROUP_1)), Integer.parseInt(matcherEvery.group(GROUP_2)), null);
         } else if (matcherRange.matches()) {
-            return new CronDaysOfMonth(Integer.parseInt(matcherRange.group(1)), null, Integer.parseInt(matcherRange.group(2)));
+            return new CronDaysOfMonth(Integer.parseInt(matcherRange.group(GROUP_1)), null, Integer.parseInt(matcherRange.group(GROUP_2)));
         } else if (matcherSimple.matches()) {
-            return new CronDaysOfMonth(Integer.parseInt(matcherSimple.group(1)), null, null);
+            return new CronDaysOfMonth(Integer.parseInt(matcherSimple.group(GROUP_1)), null, null);
         } else {
             return parseElementLiteralCases(expression);
         }
@@ -75,31 +104,6 @@ public class CronDaysOfMonth implements CronToken {
         } else {
             throw new IllegalArgumentException("Wrong Cron format for days of month: " + expression);
         }
-    }
-
-    private CronDaysOfMonth(boolean any) {
-        this.any = any;
-    }
-
-    public CronDaysOfMonth(Integer start, Integer every, Integer end) {
-        assert start != null;
-        assert start > -31 && start <= 31;
-        this.start = start;
-        if (end != null) {
-            assert end > -31 && end <= 31 && end >= start;
-            this.end = end;
-        }
-        if (every != null) {
-            assert every > 0;
-            this.every = every;
-        }
-        this.closestWeekday = false;
-        this.any = false;
-    }
-
-    public CronDaysOfMonth(Integer start, Integer every, Integer end, boolean closestWeekday) {
-        this(start, every, end);
-        this.closestWeekday = closestWeekday;
     }
 
     public boolean isAny() {
@@ -135,26 +139,36 @@ public class CronDaysOfMonth implements CronToken {
         if (any) {
             return 0;
         }
-        int result = start ^ (start >>> 32);
-        result = 31 * result + (every == null ? 0 : every.hashCode());
-        result = 31 * result + (end == null ? 0 : end.hashCode());
-        result = 31 * result + (end == null ? 0 : end.hashCode());
-        result = 31 * result + Objects.hashCode(any);
-        result = 31 * result + Objects.hashCode(closestWeekday);
+        final int constant = 32;
+        final int prime = 31;
+        int result = start ^ (start >>> constant);
+        result = prime * result + (every == null ? 0 : every.hashCode());
+        result = prime * result + (end == null ? 0 : end.hashCode());
+        result = prime * result + (end == null ? 0 : end.hashCode());
+        result = prime * result + Objects.hashCode(false);
+        result = prime * result + Objects.hashCode(closestWeekday);
         return result;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        if (this.getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null) {
+            return false;
+        }
+        if (this.getClass() != o.getClass()) {
+            return false;
+        }
         CronDaysOfMonth cronDaysOfMonth = (CronDaysOfMonth) o;
-        if (any && cronDaysOfMonth.any) return true;
+        if (any && cronDaysOfMonth.any) {
+            return true;
+        }
         return any == cronDaysOfMonth.any
-                && start.equals(cronDaysOfMonth.start)
-                && every.equals(cronDaysOfMonth.every)
-                && end.equals(cronDaysOfMonth.end)
+                && Objects.equals(start, cronDaysOfMonth.start)
+                && Objects.equals(every, cronDaysOfMonth.every)
+                && Objects.equals(end, cronDaysOfMonth.end)
                 && closestWeekday == cronDaysOfMonth.closestWeekday;
     }
 }
