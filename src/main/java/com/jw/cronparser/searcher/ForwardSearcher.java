@@ -1,4 +1,4 @@
-package com.jw.cronparser.checker;
+package com.jw.cronparser.searcher;
 
 import static com.jw.cronparser.CronUtils.*;
 

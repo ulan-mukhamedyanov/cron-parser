@@ -1,4 +1,4 @@
-package com.jw.cronparser.checker;
+package com.jw.cronparser.searcher;
 
 import java.time.LocalDateTime;
 
